@@ -46,7 +46,11 @@ public class MultilineDeserializer implements EventDeserializer{
         this.outputCharset = Charset.forName(
                 context.getString(OUT_CHARSET_KEY, CHARSET_DFLT));
         this.maxLineLength = context.getInteger(MAXLINE_KEY, MAXLINE_DFLT);
-        this.regex = Pattern.compile(context.getString(CONFIG_REGEX, DEFAULT_REGEX)).matcher("");
+
+        final String _regex = context.getString(CONFIG_REGEX, DEFAULT_REGEX);
+        logger.debug(_regex);
+
+        this.regex = Pattern.compile(_regex).matcher("");
         this.isOpen = true;
     }
 
