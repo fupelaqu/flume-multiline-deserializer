@@ -11,7 +11,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TestMultilineDeserializer {
 
@@ -26,6 +28,16 @@ public class TestMultilineDeserializer {
         mini = sb.toString();
         sb.append("org.apache.cxf.interceptor.Fault: MonService.maMethod() - message\n");
         sb.append("\tat org.apache.cxf.service.invoker.AbstractInvoker.createFault(AbstractInvoker.java:155)\n");
+        sb.append("2016-01-25 19:10:59,452 INFO  [org.apache.cxf.interceptor.LoggingInInterceptor] (http-0.0.0.0-8080-2) : Inbound Message\n");
+        sb.append("----------------------------\n");
+        sb.append("ID: 140\n");
+        sb.append("Address: http://localhost:8080/test/services/MonService/doSomething/\n");
+        sb.append("Encoding: ISO-8859-1\n");
+        sb.append("Http-Method: POST\n");
+        sb.append("Content-Type: application/json\n");
+        sb.append("Headers: {Accept=[application/json], Authorization=[Basic cGFpZW1lbnQtY2xpZW50QHNuY2YuY29tOmNoYW5nZWl0], cache-control=[no-cache], connection=[keep-alive], Content-Length=[565], content-type=[application/json], host=[localhost:8080], pragma=[no-cache], user-agent=[Apache CXF 2.4.2]}\n");
+        sb.append("Payload: {\"numeroTransaction\":\"16025185029809\",\"numeroAutorisation\":\"250225\",\"numeroCarte\":\"XXXXXXXXXXXXYYYY\",\"identifiantCommercant\":\"DUMMY\",\"numeroCommercant\":\"99999999999999\",\"dateExpirationCarte\":\"2017-05-01T00:00:00.000+0200\",\"montant\":21.0,\"certificatTransaction\":null,\"dateTransaction\":\"2016-01-25T18:50:00.000+0100\",\"dateAchat\":\"2016-01-25T18:50:30.710+0100\",\"codeReponseAuthorisation\":\"00000\",\"typeCarte\":{\"value\":\"CB\"},\"numeroCarteEnClair\":\"XXXXXXXXXXXXYYYY\",\"numeroDossier\":null,\"modeValidation\":{\"value\":0},\"modeSaisie\":{\"value\":1},\"codeCVV\":\"xxx\",\"status\":null}\n");
+        sb.append("--------------------------------------\n");
         multiline = sb.toString();
     }
 
@@ -126,7 +138,22 @@ public class TestMultilineDeserializer {
     @Test
     public void testMultiline() throws IOException {
         ResettableInputStream in = new ResettableTestStringInputStream(multiline);
-        EventDeserializer des = new MultilineDeserializer(new Context(), in);
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put(
+                "regex",
+                "^([\\-]+)|^(ID:).*|" +
+                        "^(Address:).*|" +
+                        "^(Encoding:).*|" +
+                        "^(Http\\-Method:).*|" +
+                        "^(Content\\-Type:).*|" +
+                        "^(Headers:).*|" +
+                        "^(Payload:).*|" +
+                        ".*(\\s*.*(Exception|Error|Fault): .+)|" +
+                        ".*(\\s+at .+)|" +
+                        ".*(\\s*Caused by:.+)|" +
+                        ".*(\\s+... (\\d+) more)"
+        );
+        EventDeserializer des = new MultilineDeserializer(new Context(parameters), in);
         validateMultilineParse(des);
     }
 
@@ -149,6 +176,9 @@ public class TestMultilineDeserializer {
         evt = des.readEvent();
         Assert.assertEquals("Line 2 should be repeated, " +
                 "because we reset() the stream", new String(evt.getBody()), line);
+
+        evt = des.readEvent(); // another multiline event
+        System.err.println(new String(evt.getBody()));
 
         evt = des.readEvent();
         Assert.assertNull("Event should be null because there are no lines " +

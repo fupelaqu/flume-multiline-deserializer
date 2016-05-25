@@ -31,6 +31,8 @@ public class MultilineDeserializer implements EventDeserializer{
 
     private final Matcher regex;
 
+    public static final String LS = System.getProperty("line.separator");
+
     public static final String OUT_CHARSET_KEY = "outputCharset";
     public static final String CHARSET_DFLT = "UTF-8";
 
@@ -54,6 +56,7 @@ public class MultilineDeserializer implements EventDeserializer{
         this.isOpen = true;
     }
 
+    @Override
     public Event readEvent() throws IOException {
         ensureOpen();
         String line = null;
@@ -75,7 +78,7 @@ public class MultilineDeserializer implements EventDeserializer{
                 line = readLine();
                 isMatch = line != null && regex.reset(line).matches();
                 if(isMatch){
-                    lines.append('\n');
+                    lines.append(LS);
                     lines.append(line);
                 }
                 else if(line != null){
@@ -92,6 +95,7 @@ public class MultilineDeserializer implements EventDeserializer{
         }
     }
 
+    @Override
     public List<Event> readEvents(int numEvents) throws IOException {
         ensureOpen();
         List<Event> events = Lists.newLinkedList();
@@ -106,16 +110,19 @@ public class MultilineDeserializer implements EventDeserializer{
         return events;
     }
 
+    @Override
     public void mark() throws IOException {
         ensureOpen();
         in.mark();
     }
 
+    @Override
     public void reset() throws IOException {
         ensureOpen();
         in.reset();
     }
 
+    @Override
     public void close() throws IOException {
         if (isOpen) {
             reset();
